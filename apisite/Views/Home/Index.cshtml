@@ -1,0 +1,171 @@
+﻿<div class="jumbotron">
+    <h1>ASP.NET</h1>
+    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS, and JavaScript.</p>
+    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
+</div>
+<div class="row">
+    <div class="col-md-4">
+        <button id="get" type="button">Вся база</button>
+    </div>
+    <div id="tableBlock"></div>
+    <div id="editBlock">
+        <h3><b>Edit Player</b></h3>
+        <table>
+            <tr><td><label>ID: </label></td><td><input type="number" id="ID" /></td></tr>
+            <tr><td><label>Instrument: </label></td><td><input type="number" id="Instrument" /></td></tr>
+            <tr><td><label>Type: </label></td><td><input type="text" id="Type" /></td></tr>
+            <tr><td><label>Company: </label></td><td><input type="number" id="Company" /></td></tr>
+            <tr><td><label>Name: </label></td><td><input type="text" id="Name" /></td></tr>
+            <tr><td><label>Cost: </label></td><td><input type="number" id="Cost" /></td></tr>
+        </table>
+        <button id="editPlayer">Save</button>
+    </div>
+    <div class="col-md-4">
+        <div id="add-modal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Add</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="modal-body">
+                        <div id="createPlayer">
+                            <h3><b>Add Player</b></h3>
+                            <table>
+                                <tr><td><label>Instrument: </label></td><td><input type="number" id="In" /></td></tr>
+                                <tr><td><label>Type: </label></td><td><input type="text" id="Ty" /></td></tr>
+                                <tr><td><label>Company: </label></td><td><input type="number" id="Co" /></td></tr>
+                                <tr><td><label>Name: </label></td><td><input type="text" id="Na" /></td></tr>
+                                <tr><td><label>Cost: </label></td><td><input type="number" id="Co" /></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                        <button id="add-accept" type="button" class="btn btn-primary">Добавить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="col-md-4">
+
+    </div>
+</div>
+
+@section scripts
+{
+   
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+
+            GetAll();
+        
+            $("#get").click(function (event) {
+                Add();
+            });
+            $("#delItem").click(function (event)
+            {
+                DeleteItem(id);
+            }
+            )
+
+        });
+
+       // $("#get").click(function (event) { Add(); });
+        function Add() {
+            $('#add-modal').modal('show');
+
+            $('#add-accept').on('click', () => {
+                var product = {
+                    Instrument: $('#In').val(),
+                    Type: $('#Ty').val(),
+                    Company: $('#Co').val(),
+                    Name: $('#Na').val(),
+                    Cost: $('#Co').val(),
+                };
+                $.ajax({
+                    url: '/api/values/',
+                   //url: '/api/values/getAll/',
+                    type: 'POST',
+                    data: JSON.stringify(product),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        $('#add-modal').modal('hide');
+                        $('#add-accept').off('click')
+                    },
+                    error: function (error) {
+                        alert(error.message);
+                    }
+                });
+            })
+        }
+
+        function DeleteItem(id) {
+            $.ajax({
+                url: 'api/base/' +id ,
+                //  url: '/api/values/getAll/',
+                type: 'GET',
+                processData: true,
+                dataType: 'json',
+                data: {
+                },
+                success: function (data) {
+
+                },
+                error: function (error) {
+
+                }
+            });
+
+        }
+
+       function GetAll() {
+
+            $("#createBlock").css('display', 'block');
+            $("#editBlock").css('display', 'none');
+            $.ajax({
+                url: '/api/base/',
+              //  url: '/api/values/getAll/',
+                type: 'GET',
+                processData: true,
+                dataType: 'json',
+                data: {
+                },
+                success: function (data) {
+                    WriteResponse(data);
+                    $("#table").click((event) => {
+                        const type = $(event.target).attr('data-type');
+                        if (type === 'header') {
+                            sortByHeader(event.target);
+                        }
+                    })
+                },
+                error: function (error) {
+                    alert(error.message);
+                }
+            });
+        }
+        function WriteResponse(item) {
+            var strResult = "<table id='table'><th>ID</th><th data-type='header'>Instrument</th><th>Type</th><th data-type='header'>Company</th><th>Name</th><th>Cost</th>";
+            $(item).each(function (index, prod) {
+                strResult += "<tr><td>" + prod.id + "</td><td> " + prod.instrument + "</td><td>" + prod.type + "</td><td>" + prod.company
+                    + "</td><td>" + prod.name + "</td><td>" + prod.cost +
+                    "</td><td><a id='editItem' name='" + prod.id + "' onclick='EditItem("+ prod.id +");' >Edit</a></td>" +
+                    "<td><button id='delItem' name='" + prod.id + "' onclick='DeleteItem(" + prod.id +");' >Delete</button></td></tr>";
+            });
+            strResult += "</table>";
+            $("#tableBlock").html(strResult);
+            
+        }
+        
+    </script>
+
+
+
+
+}
