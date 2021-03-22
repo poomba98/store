@@ -50,5 +50,6 @@ namespace apisite
         public string company { get; set; }
         public string name { get; set; }
         public int cost { get; set; }
+        public int count { get; set; }
     }
 }

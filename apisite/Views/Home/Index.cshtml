@@ -5,7 +5,8 @@
 </div>
 <div class="row">
     <div class="col-md-4">
-        <button id="get" type="button">Вся база</button>
+        <button id="get" type="button">Добавить</button>
+        <button id="sortc" type="button">Сортировать</button>
     </div>
     <div id="tableBlock"></div>
     <div id="editBlock">
@@ -49,10 +50,42 @@
                 </div>
             </div>
         </div>
-
+        <div id="edit-modal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Add</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="modal-body">
+                        <div id="editPlayer">
+                            <h3><b>Edit Player</b></h3>
+                            <table>
+                                <tr><td><label>Instrument: </label></td><td><input type="text" id="eIn" /></td></tr>
+                                <tr><td><label>Type: </label></td><td><input type="text" id="eTy" /></td></tr>
+                                <tr><td><label>Company: </label></td><td><input type="text" id="eCo" /></td></tr>
+                                <tr><td><label>Name: </label></td><td><input type="text" id="eNa" /></td></tr>
+                                <tr><td><label>Cost: </label></td><td><input type="number" id="eCost" /></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                        <button id="edit-accept" type="button" class="btn btn-primary">Изменить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="col-md-4">
-
+        <textarea id="searchfield"></textarea>
+        <button id="find">найти</button>
+    </div>
+    <div>
+        <button id="prev">Предыдущий</button>
+        <button id="next">Следующий</button>
     </div>
 </div>
 
@@ -60,23 +93,112 @@
 {
    
     <script type="text/javascript">
-
+        var page;
+        var tab;
+        var searchword;
+        var max;
         $(document).ready(function () {
-
-            GetAll();
-        
+            //fillIn("1");
+            page = 0;
+            check = false;
+            search("$", "0", page);
+            $("#prev").click(function (event) {
+                if (page != 0) { page = page - 1; }
+                search(searchword, "0", page);
+            });
+            $("#next").click(function (event) {
+                if ((page + 1) * 5 < max)
+                    page = page + 1;
+                search(searchword, "0", page);
+            });
             $("#get").click(function (event) {
                 Add();
             });
-            $("#delItem").click(function (event)
-            {
+            $("#delItem").click(function (event) {
                 DeleteItem(id);
             }
-            )
+            );
+            $("#find").click(function (event) {
+                page = 0;
+                searchword = $("#searchfield").val();
+                if (searchword == "") { searchword = "$";}
+                search(searchword,"0",page);
+            });
+
+            $("#sortc").click(function (event) {
+                if (searchword == "") { searchword = "$"; }
+                  search(searchword,col,page); 
+            });
+            $("#edit").click(function (event) {
+                EditItem(i);
+            });
 
         });
+        function fillIn(i) {
+            $.ajax({
+                url: '/api/base/fill/' + i,
+                type: 'GET',
+                processData: true,
+                dataType: 'json',
+                data: {
+                },
+                success: function (data) {
+                    filling(data,i);
+                },
+                error: function (error) {
+                    alert(error.message);
+                }
+            });
 
-       // $("#get").click(function (event) { Add(); });
+        };
+        function EditItem(i)
+        {
+            $("#edit-modal").modal('show');
+            $('#edit-accept').on('click', () => {
+                var product = {
+                    ID: i,
+                    Instrument: $('#eIn').val(),
+                    Type: $('#eTy').val(),
+                    Company: $('#eCo').val(),
+                    Name: $('#eNa').val(),
+                    Cost: $('#eCost').val(),
+                };
+                $.ajax({
+                    url: 'api/base/up/',
+                    //url: '/api/values/getAll/',
+                    type: 'POST',
+                    data: JSON.stringify(product),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        $('#add-modal').modal('hide');
+                        $('#add-accept').off('click')
+                    },
+                    error: function (error) {
+                        alert(error.message);
+                    }
+                });
+            });
+
+        };
+        function search(a,i,page)
+        {
+                $("#createBlock").css('display', 'block');
+                $("#editBlock").css('display', 'none');
+                $.ajax({
+                    url: '/api/base/search/'+a+'/'+i+'/'+page,
+                    type: 'GET',
+                    processData: true,
+                    dataType: 'json',
+                    data: {
+                    },
+                    success: function (data) {
+                        WriteResponse(data);
+                    },
+                    error: function (error) {
+                        alert(error.message);
+                    }
+                });
+        }
         function Add() {
             $('#add-modal').modal('show');
 
@@ -107,9 +229,8 @@
 
         function DeleteItem(id) {
             $.ajax({
-                url: 'api/base/' +id ,
-                //  url: '/api/values/getAll/',
-                type: 'GET',
+                url: 'api/base/del/' +id ,
+                type: 'PUT',
                 processData: true,
                 dataType: 'json',
                 data: {
@@ -138,12 +259,6 @@
                 },
                 success: function (data) {
                     WriteResponse(data);
-                    $("#table").click((event) => {
-                        const type = $(event.target).attr('data-type');
-                        if (type === 'header') {
-                            sortByHeader(event.target);
-                        }
-                    })
                 },
                 error: function (error) {
                     alert(error.message);
@@ -151,12 +266,15 @@
             });
         }
         function WriteResponse(item) {
-            var strResult = "<table id='table'><th>ID</th><th data-type='header'>Instrument</th><th>Type</th><th data-type='header'>Company</th><th>Name</th><th>Cost</th>";
+            i = 0;
+            var strResult = "<table id='table'><th><button id='sortcom' onclick='search(searchword,0,page)'>ID</button></th><th data-type='header'><button id='sortcom' onclick='search(searchword,4,page)'>Instrument</button></th><th><button id='sortcom' onclick='search(searchword,5,page)'>Type</button></th><th data-type='header'><button id='sortcom' onclick='search(searchword,1,page)'>Company</button></th><th><button id='sortcom' onclick='search(searchword,3,page)'>Name</button></th><th><button id='sortcom' onclick='search(searchword,2,page)'>Cost</button></th>";
             $(item).each(function (index, prod) {
-                strResult += "<tr><td>" + prod.id + "</td><td> " + prod.instrument + "</td><td>" + prod.type + "</td><td>" + prod.company
-                    + "</td><td>" + prod.name + "</td><td>" + prod.cost +
-                    "</td><td><a id='editItem' name='" + prod.id + "' onclick='EditItem("+ prod.id +");' >Edit</a></td>" +
-                    "<td><button id='delItem' name='" + prod.id + "' onclick='DeleteItem(" + prod.id +");' >Delete</button></td></tr>";
+                i = i + 1;
+                strResult += "<tr id='it1'><td id='id1'>" + prod.id + "</td><td> " + prod.instrument + "</td><td>" + prod.type + "</td><td>" + prod.company
+                    + "</td><td id='name1'>" + prod.name + "</td><td id='price'>" + prod.cost +
+                    "</td><td><button id='edit' name='" + prod.id + "' onclick='EditItem(" +prod.id+");' >Edit</button></td>" +
+                    "<td><button id='delItem' name='" + prod.id + "' onclick='DeleteItem(" + prod.id + ");' >Delete</button></td></tr>";
+                max = prod.count;
             });
             strResult += "</table>";
             $("#tableBlock").html(strResult);
